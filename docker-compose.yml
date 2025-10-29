@@ -25,6 +25,7 @@ services:
     environment:
       PORT: "4001"
       NODE_ENV: "production"
+      DATABASE_URL: "postgresql://postgres:7f8734645f995d0a6100@udemy_n8n_n8n-postgres:5432/n8n?sslmode=disable"
     volumes:
       - gap-api-code:/code
     depends_on:
@@ -35,14 +36,14 @@ services:
       - -lc
       - |
         while [ ! -f /code/.git-ready ]; do sleep 2; done
-        ls -la
-        ls -la src/
         npm ci --silent
+        npx prisma generate
+        npx prisma db push
         node server.js
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4001/health"]
       interval: 30s
       timeout: 15s
       retries: 5
-      start_period: 90s
+      start_period: 120s
     restart: unless-stopped
