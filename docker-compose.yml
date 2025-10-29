@@ -25,7 +25,7 @@ services:
     environment:
       PORT: "4001"
       NODE_ENV: "production"
-      DATABASE_URL: "postgresql://postgres:7f8734645f995d0a6100@udemy_n8n_n8n-postgres:5432/n8n?sslmode=disable"
+      DATABASE_URL: "postgresql://postgres:7f8734645f995d0a6100@udemy_n8n_n8n-postgres:5432/gapi?sslmode=disable"
     volumes:
       - gap-api-code:/code
     depends_on:
