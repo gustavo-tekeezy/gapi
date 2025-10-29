@@ -1,0 +1,48 @@
+volumes:
+  gap-api-code: {}
+
+services:
+  gap-api-git-sync:
+    image: alpine:3.20
+    volumes:
+      - gap-api-code:/code
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        set -e
+        apk add --no-cache git ca-certificates >/dev/null
+        rm -rf /code/* /code/.* 2>/dev/null || true
+        git clone --depth=1 https://github.com/gustavo-tekeezy/gapi /code
+        git -C /code checkout -q main || true
+        git -C /code reset --hard origin/main
+        echo done > /code/.git-ready
+    restart: "no"
+
+  gap-api:
+    image: node:20-alpine
+    working_dir: /code
+    environment:
+      PORT: "4001"
+      NODE_ENV: "production"
+    volumes:
+      - gap-api-code:/code
+    depends_on:
+      gap-api-git-sync:
+        condition: service_completed_successfully
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        while [ ! -f /code/.git-ready ]; do sleep 2; done
+        ls -la
+        ls -la src/
+        npm ci --silent
+        node server.js
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+    restart: unless-stopped
