@@ -1,32 +1,41 @@
-// Simulando um "banco de dados" em memória
-let users = [
-  { id: 1, name: 'João Silva', email: 'joao@email.com' },
-  { id: 2, name: 'Maria Santos', email: 'maria@email.com' }
-];
+const prisma = require('../config/database');
 
 const userController = {
-  // GET /api/users
-  getAllUsers: (req, res) => {
+  getAllUsers: async (req, res) => {
     try {
+      const users = await prisma.user.findMany({
+        include: {
+          profile: true,
+          posts: true
+        }
+      });
+
       res.json({
         success: true,
         data: users,
         total: users.length
       });
     } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
       res.status(500).json({
         success: false,
-        error: 'Erro ao buscar usuários'
+        error: 'Erro interno do servidor'
       });
     }
   },
 
-  // GET /api/users/:id
-  getUserById: (req, res) => {
+  getUserById: async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const user = users.find(u => u.id === userId);
       
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          profile: true,
+          posts: true
+        }
+      });
+
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -39,15 +48,15 @@ const userController = {
         data: user
       });
     } catch (error) {
+      console.error('Erro ao buscar usuário:', error);
       res.status(500).json({
         success: false,
-        error: 'Erro ao buscar usuário'
+        error: 'Erro interno do servidor'
       });
     }
   },
 
-  // POST /api/users
-  createUser: (req, res) => {
+  createUser: async (req, res) => {
     try {
       const { name, email } = req.body;
 
@@ -58,14 +67,16 @@ const userController = {
         });
       }
 
-      const newUser = {
-        id: users.length + 1,
-        name,
-        email,
-        createdAt: new Date()
-      };
-
-      users.push(newUser);
+      const newUser = await prisma.user.create({
+        data: {
+          name,
+          email
+        },
+        include: {
+          profile: true,
+          posts: true
+        }
+      });
 
       res.status(201).json({
         success: true,
@@ -73,72 +84,83 @@ const userController = {
         message: 'Usuário criado com sucesso'
       });
     } catch (error) {
+      if (error.code === 'P2002') {
+        return res.status(409).json({
+          success: false,
+          error: 'Email já cadastrado'
+        });
+      }
+      
+      console.error('Erro ao criar usuário:', error);
       res.status(500).json({
         success: false,
-        error: 'Erro ao criar usuário'
+        error: 'Erro interno do servidor'
       });
     }
   },
 
-  // PUT /api/users/:id
-  updateUser: (req, res) => {
+  updateUser: async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const { name, email } = req.body;
-      
-      const userIndex = users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) {
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name,
+          email
+        },
+        include: {
+          profile: true,
+          posts: true
+        }
+      });
+
+      res.json({
+        success: true,
+        data: updatedUser,
+        message: 'Usuário atualizado com sucesso'
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
         return res.status(404).json({
           success: false,
           error: 'Usuário não encontrado'
         });
       }
-
-      users[userIndex] = {
-        ...users[userIndex],
-        name: name || users[userIndex].name,
-        email: email || users[userIndex].email,
-        updatedAt: new Date()
-      };
-
-      res.json({
-        success: true,
-        data: users[userIndex],
-        message: 'Usuário atualizado com sucesso'
-      });
-    } catch (error) {
+      
+      console.error('Erro ao atualizar usuário:', error);
       res.status(500).json({
         success: false,
-        error: 'Erro ao atualizar usuário'
+        error: 'Erro interno do servidor'
       });
     }
   },
 
-  // DELETE /api/users/:id - FUNÇÃO QUE ESTAVA FALTANDO
-  deleteUser: (req, res) => {
+  deleteUser: async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const userIndex = users.findIndex(u => u.id === userId);
-      
-      if (userIndex === -1) {
+
+      await prisma.user.delete({
+        where: { id: userId }
+      });
+
+      res.json({
+        success: true,
+        message: 'Usuário deletado com sucesso'
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
         return res.status(404).json({
           success: false,
           error: 'Usuário não encontrado'
         });
       }
-
-      const deletedUser = users.splice(userIndex, 1)[0];
-
-      res.json({
-        success: true,
-        data: deletedUser,
-        message: 'Usuário deletado com sucesso'
-      });
-    } catch (error) {
+      
+      console.error('Erro ao deletar usuário:', error);
       res.status(500).json({
         success: false,
-        error: 'Erro ao deletar usuário'
+        error: 'Erro interno do servidor'
       });
     }
   }

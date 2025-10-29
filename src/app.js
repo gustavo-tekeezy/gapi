@@ -5,10 +5,13 @@ const morgan = require('morgan');
 
 // Importar rotas
 const userRoutes = require('./routes/userRoutes');
-// const productRoutes = require('./routes/productRoutes');
-// const orderRoutes = require('./routes/orderRoutes');
-// const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const authRoutes = require('./routes/authRoutes');
 const calculatorRoutes = require('./routes/calculatorRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const postRoutes = require('./routes/postRoutes');
+
 
 const app = express();
 
@@ -19,12 +22,16 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rotas
-app.use('/api/users', userRoutes);
-// app.use('/api/products', productRoutes);
-// app.use('/api/orders', orderRoutes);
-// app.use('/api/auth', authRoutes);
+
+
 app.use('/api/calculator', calculatorRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/calculator', calculatorRoutes);
+app.use('/api/profiles', profileRoutes);
+app.use('/api/posts', postRoutes);
 
 // Rota health check
 app.get('/health', (req, res) => {
